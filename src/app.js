@@ -1,4 +1,4 @@
-import { chapters, vocabulary, byId, shuffled, parseWordList, isCorrect } from './core/vocabulary.js';
+import { chapters, vocabulary, byId, shuffled, parseWordList } from './core/vocabulary.js';
 import { createSession, grade, finish, rateCard, alignAnswers, trackActivity, summarize, uid } from './core/session.js';
 import { Repository, emptyState, STORAGE_KEY, SAFETY_KEY } from './core/storage.js';
 import { lanes, dayKey, dueEntries, wrongEntries, activitySummary } from './core/review.js';
@@ -17,7 +17,7 @@ export class StudyApp {
   constructor(win, repository, player) {
     this.win = win; this.doc = win.document; this.root = this.doc.getElementById('app');
     this.repo = repository || new Repository(win.localStorage);
-    this.route = 'home'; this.session = null; this.modalContent = ''; this.alignmentUndo = [];
+    this.route = 'home'; this.session = null; this.alignmentUndo = [];
     this.selection = {kind: 'cards', lane: 'visual', pool: 'all', chapter: '3.2', count: '20', from: '1', to: '', shuffle: false};
     this.wordFilter = {query: '', chapter: 'all', status: 'all', lane: 'dictation', reason: ''};
     this.historyFilter = {lane: 'all', chapter: 'all'};
@@ -82,8 +82,8 @@ export class StudyApp {
       history: () => this.historyPage(), settings: () => this.settingsPage(), listening: () => this.listening.render()};
     const dark = this.doc.documentElement.dataset.theme === 'dark';
     this.root.innerHTML = `<div class="workspace">
-      <aside class="sidebar"><a href="#home" class="brand" data-action="nav" data-page="home"><span class="brand-mark">词</span><span>词间<small>WANGLU · STUDY</small></span></a>
-      <div class="nav-label">我的学习空间</div><nav aria-label="主导航">${navigation.map(([page, symbol, label]) => btn('nav', `${icon(symbol)}<span>${label}</span>${page === 'wrong' && due ? `<span class="nav-count">${due}</span>` : ''}`, `nav-item ${this.route === page || (page === 'study' && ['dictation', 'cards', 'result'].includes(this.route)) ? 'active' : ''}`, `data-page="${page}"`)).join('')}</nav>
+      <aside class="sidebar"><a href="#home" class="brand" data-action="nav" data-page="home" aria-label="词间，返回今日学习"><span class="brand-mark">词</span><span>词间<small>WANGLU · STUDY</small></span></a>
+      <div class="nav-label">我的学习空间</div><nav aria-label="主导航">${navigation.map(([page, symbol, label]) => btn('nav', `${icon(symbol)}<span>${label}</span>${page === 'wrong' && due ? `<span class="nav-count">${due}</span>` : ''}`, `nav-item ${this.route === page || (page === 'study' && ['dictation', 'cards', 'result'].includes(this.route)) ? 'active' : ''}`, `data-page="${page}" aria-label="${label}" title="${label}"`)).join('')}</nav>
       <div class="sidebar-foot"><span class="local-dot"></span> 保存在当前浏览器<small>每天一点，把声音记下来。</small></div></aside>
       <div class="main-shell"><header class="topbar"><div class="breadcrumb">我的学习空间 <span>/</span> ${navigation.find(item => item[0] === this.route)?.[2] || '专注练习'}</div>
       <div class="top-actions"><span class="today-date">${new Date().toLocaleDateString('zh-CN', {month: 'long', day: 'numeric', weekday: 'long'})}</span>${btn('toggle-theme', `${icon(dark ? 'sun' : 'moon')}<span>${dark ? '白天' : '黑夜'}</span>`, 'button quiet small', `aria-label="切换${dark ? '白天' : '黑夜'}模式"`)}</div></header>

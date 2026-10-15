@@ -29,7 +29,7 @@ export function applyResults(progress, session) {
     const previous = item.lanes[session.lane] || {reviews: 0, lapses: 0, streak: 0, lastSuccessDay: null};
     const crossDay = previous.lastSuccessDay !== dayKey(now);
     const streak = result.correct ? previous.streak + (crossDay ? 1 : 0) : 0;
-    const wrong = !result.correct && result.rating !== 'unsure';
+    const wrong = !result.correct && (result.rating !== 'unsure' || result.spellingCorrect === false);
     item.everWrong ||= wrong;
     item.lanes[session.lane] = {
       reviews: previous.reviews + 1, lapses: previous.lapses + (wrong ? 1 : 0), streak,

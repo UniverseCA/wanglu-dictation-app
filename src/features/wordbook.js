@@ -1,4 +1,5 @@
 import { createSession } from '../core/session.js';
+import { byId } from '../core/vocabulary.js';
 import { lanes, dueEntries } from '../core/review.js';
 import { escapeHTML as esc, button as btn, formatDate, icon } from '../ui.js';
 
@@ -7,12 +8,14 @@ const selectOptions = (values, selected) => values.map(([value, label]) => `<opt
 export class Wordbook {
   constructor(app) {this.app = app; this.limit = 100;}
 
+  sources(item) {return [...new Set([item.entry.chapterId, ...item.sourceIds.map(id => byId.get(id)?.chapterId).filter(Boolean)])];}
+
   filtered() {
     const a = this.app, f = a.wordFilter;
     const due = new Set(dueEntries(a.data.progress, f.lane).map(e => e.lexemeId));
     return Object.values(a.data.progress).filter(item => item.everWrong)
       .filter(item => !f.query || `${item.entry.display} ${item.entry.meaning}`.toLowerCase().includes(f.query.toLowerCase()))
-      .filter(item => f.chapter === 'all' || item.entry.chapterId === f.chapter)
+      .filter(item => f.chapter === 'all' || this.sources(item).includes(f.chapter))
       .filter(item => !f.reason || item.attempts.some(attempt => attempt.reason === f.reason))
       .filter(item => f.status === 'all' || (f.status === 'due' ? due.has(item.entry.lexemeId) : f.status === 'mastered' ? item.lanes[f.lane]?.status === 'mastered' : item.lanes[f.lane]?.status !== 'mastered'))
       .sort((a, b) => Math.max(...Object.values(b.lanes).map(lane => lane.lapses), 0) - Math.max(...Object.values(a.lanes).map(lane => lane.lapses), 0));
@@ -20,13 +23,13 @@ export class Wordbook {
 
   render() {
     const a = this.app, f = a.wordFilter, items = this.filtered();
-    const chapters = [...new Set(Object.values(a.data.progress).filter(i => i.everWrong).map(i => i.entry.chapterId))];
+    const chapters = [...new Set(Object.values(a.data.progress).filter(i => i.everWrong).flatMap(i => this.sources(i)))];
     return `<div class="page-heading"><div><span class="eyebrow">WORDS TO COME BACK TO</span><h1>错过的，再认识一次。</h1><p>听写错误和背词时的“不会”都会留在这里，掌握情况按练习方式分别记录。</p></div></div>
       <div class="filter-bar"><label>搜索<input id="word-search" type="search" placeholder="英文或中文" value="${esc(f.query)}"></label><label>章节<select data-word-filter="chapter">${selectOptions([['all', '全部来源'], ...chapters.map(ch => [ch, ch])], f.chapter)}</select></label><label>练习方式<select data-word-filter="lane">${selectOptions(Object.entries(lanes), f.lane)}</select></label><label>状态<select data-word-filter="status">${selectOptions([['all', '全部错词'], ['learning', '仍需巩固'], ['due', '当前到期'], ['mastered', '已掌握']], f.status)}</select></label><label>错因<select data-word-filter="reason">${selectOptions([['', '全部错因'], ...['没听出', '拼写错误', '单复数或词尾', '跟丢或错行', '词义不熟', '其他'].map(value => [value, value])], f.reason)}</select></label></div>
       <div class="actions wordbook-actions">${btn('word-practice', '练习筛选出的词', 'button primary', items.length ? '' : 'disabled')}${btn('word-due', '本模式到期复习', 'button secondary')}<span class="muted">${items.length} 个词项</span></div>
       <section class="panel">${items.length ? items.slice(0, this.limit).map(item => {
         const lane = item.lanes[f.lane];
-        return `<article class="wordbook-row"><div><strong>${esc(item.entry.display)}</strong><small>${esc(item.entry.meaning)}</small><small>${esc(item.entry.chapterId)} · ${item.sourceIds.length} 个来源条目</small></div><span class="status">${lane ? `${lane.lapses} 次错误<br>${lane.status === 'mastered' ? '已掌握' : '巩固中'}` : '本模式未练习'}</span><span class="status">${lane ? `下次复习<br>${formatDate(lane.dueAt)}` : '—'}</span>${btn('word-detail', icon('arrow'), 'icon-button', `data-key="${esc(item.entry.lexemeId)}" aria-label="查看词条详情"`)}</article>`;
+        return `<article class="wordbook-row"><div><strong>${esc(item.entry.display)}</strong><small>${esc(item.entry.meaning)}</small><small>${esc(this.sources(item).join(' / '))} · ${item.sourceIds.length} 个来源条目</small></div><span class="status">${lane ? `${lane.lapses} 次错误<br>${lane.status === 'mastered' ? '已掌握' : '巩固中'}` : '本模式未练习'}</span><span class="status">${lane ? `下次复习<br>${formatDate(lane.dueAt)}` : '—'}</span>${btn('word-detail', icon('arrow'), 'icon-button', `data-key="${esc(item.entry.lexemeId)}" aria-label="查看词条详情"`)}</article>`;
       }).join('') : a.empty('这里的空白，也是进步。', '可调整筛选范围，或先完成一轮背词、听写。')}${items.length > this.limit ? btn('word-more', '加载更多', 'button quiet wide') : ''}</section>`;
   }
 

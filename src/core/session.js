@@ -36,13 +36,16 @@ export function grade(session, now = new Date()) {
       attempts.push({typed, rating: rating || null, at, correct});
     }
     return {entry, typed, correct: !unplayed && correct, status, rating: rating || null,
+      spellingCorrect: session.kind === 'cards' && session.lane === 'audio' && typed.trim() ? isCorrect(typed, entry) : null,
       reason: session.reasons[entry.id] || '', hint: correct ? '' : spellingHint(typed, entry)};
   });
   session.feedback = results;
   if (!session.firstAttempt) {
     const initial = session.kind === 'cards' ? results.map(result => {
       const first = session.cardFirst?.[result.entry.id];
-      return first ? {...result, typed: first.typed, rating: first.rating, correct: first.rating === 'known' && !first.unplayed, status: first.unplayed ? 'unplayed' : first.rating === 'known' ? 'correct' : 'incorrect'} : result;
+      return first ? {...result, typed: first.typed, rating: first.rating,
+        spellingCorrect: session.lane === 'audio' && first.typed.trim() ? isCorrect(first.typed, result.entry) : null,
+        correct: first.rating === 'known' && !first.unplayed, status: first.unplayed ? 'unplayed' : first.rating === 'known' ? 'correct' : 'incorrect'} : result;
     }) : results;
     session.firstAttempt = {at, results: structuredClone(initial), ...summarize(initial)};
   }

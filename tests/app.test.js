@@ -4,7 +4,7 @@ import { Window } from 'happy-dom';
 import { mountApp } from '../src/app.js';
 import { Repository } from '../src/core/storage.js';
 import { createSession } from '../src/core/session.js';
-import { makeEntry } from '../src/core/vocabulary.js';
+import { makeEntry, vocabulary } from '../src/core/vocabulary.js';
 import { validateRange, SegmentPlayer } from '../src/features/listening.js';
 import { specialties } from '../src/features/specialties.js';
 
@@ -23,9 +23,25 @@ test('every main route renders and theme preference survives reload', async () =
   const t = setup();
   try {
     for (const route of ['home', 'study', 'wrong', 'history', 'settings', 'listening']) {t.app.navigate(route); assert(t.doc.querySelector('h1'));}
+    assert([...t.doc.querySelectorAll('.nav-item')].every(button => button.getAttribute('aria-label')));
     await t.app.action('toggle-theme');
     assert.equal(t.doc.documentElement.dataset.theme, 'dark');
     assert.equal(new Repository(t.win.localStorage).load().theme, 'dark');
+  } finally {t.close();}
+});
+
+test('wordbook chapter filters include every original source of a repeated word', () => {
+  const t = setup();
+  try {
+    const groups = new Map();
+    for (const word of vocabulary) {const list = groups.get(word.lexemeId) || []; list.push(word); groups.set(word.lexemeId, list);}
+    const group = [...groups.values()].find(words => new Set(words.map(word => word.chapterId)).size > 1);
+    const first = group[0], second = group.find(word => word.chapterId !== first.chapterId);
+    t.app.data.progress[first.lexemeId] = {entry: first, sourceIds: [first.id, second.id], lanes: {}, attempts: [], everWrong: true};
+    t.app.wordFilter.chapter = second.chapterId;
+    assert.equal(t.app.wordbook.filtered().length, 1);
+    t.app.navigate('wrong');
+    assert(t.doc.querySelector('.wordbook-row').textContent.includes(second.chapterId));
   } finally {t.close();}
 });
 
@@ -55,6 +71,18 @@ test('audio recall hides both English and meaning; reveal waits for playback', a
     await t.app.recall.action('card-reveal');
     assert.equal(t.doc.querySelector('.recall-word').textContent, 'hello');
     assert.equal(t.doc.querySelector('.meaning').textContent, '你好');
+  } finally {t.close();}
+});
+
+test('incorrect spelling during audio recall enters wordbook even if meaning is known', async () => {
+  const t = setup();
+  try {
+    t.app.session = createSession([entry()], {kind: 'cards', lane: 'audio', audio: {}});
+    t.app.route = 'cards'; t.app.session.answers['test:hello'] = 'helo'; t.app.session.revealed = true; t.app.render();
+    await t.app.recall.action('card-rate', {dataset: {rating: 'known'}});
+    assert.equal(t.app.session.firstAttempt.results[0].rating, 'unsure');
+    const progress = Object.values(t.app.data.progress)[0];
+    assert.equal(progress.everWrong, true); assert.equal(progress.lanes.audio.lapses, 1);
   } finally {t.close();}
 });
 

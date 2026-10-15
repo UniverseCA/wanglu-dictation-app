@@ -107,6 +107,7 @@ export class ListeningRoom {
       reference: String(values.get('reference')), source: String(values.get('source')), at: new Date().toISOString()};
     this.app.update(state => {const index = state.clipNotes.findIndex(item => item.id === note.id); if (index < 0) state.clipNotes.push(note); else state.clipNotes[index] = note;});
     this.editing = note;
+    this.app.render();
     this.app.openModal(`<h2>片段已保存</h2><p>${esc(note.source || note.fileName)} · ${range.from}–${range.to} 秒</p><div class="section-heading"><h2>首次听写</h2></div><p>${esc(note.firstTyped || '未填写')}</p>${note.typed !== note.firstTyped ? `<div class="section-heading"><h2>本次订正</h2></div><p>${esc(note.typed)}</p>` : ''}${note.reference ? `<div class="section-heading"><h2>参考原文</h2></div><p>${esc(note.reference)}</p><div class="spelling-chain">${diffHTML(note.typed, note.reference)}</div>` : ''}`);
   }
 

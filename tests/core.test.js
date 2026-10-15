@@ -141,3 +141,26 @@ test('personal terms retain literal spelling and alignment preserves first answe
   assert.equal(emptyState().version, 4);
   assert.match(dayKey(at('2026-10-16')), /^\d{4}-\d{2}-\d{2}$/);
 });
+
+test('recall submissions retain the original sequence and failed audio remains excluded from first score', () => {
+  const session = createSession([word()], {kind: 'cards', lane: 'audio'});
+  session.unplayed.push('test:1'); session.revealed = true; rateCard(session, 'unknown');
+  session.cursor = 0; session.unplayed = []; session.revealed = true; rateCard(session, 'known');
+  finish(session);
+  assert.equal(session.firstAttempt.total, 0);
+  assert.equal(session.feedback[0].correct, true);
+  assert.deepEqual(session.attempts['test:1'].map(attempt => attempt.rating), ['unknown', 'known']);
+});
+
+test('invalid nested backup data cannot replace a valid workspace', () => {
+  const repo = new Repository(memory()); repo.load();
+  for (const mutate of [
+    state => {state.audio.rate = -1;},
+    state => {state.clipNotes.push({id: 'bad', from: '0', to: '10'});},
+    state => {state.draft = {entries: [word()], cursor: 0};}
+  ]) {
+    const invalid = emptyState(); mutate(invalid);
+    assert.throws(() => repo.restore(JSON.stringify(invalid)));
+    assert.equal(repo.data.sessions.length, 0);
+  }
+});
