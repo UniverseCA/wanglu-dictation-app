@@ -35,7 +35,8 @@ export function makeEntry(word, { id, chapterId = '个人词表', index = 0, mea
     display, answers, spoken: word.spoken || answers[0].replace(/\bsth\./gi, 'something').replace(/\bsb\./gi, 'somebody'),
     meaning: m, phonetic: /[<>]/.test(p) ? '' : p,
     needsReview: /[<>]/.test(p) || display === 'OHPEN',
-    lexemeId: `${answerKey(answers[0])}¦${normalize(m)}`, tags
+    lexemeId: `${answerKey(answers[0])}¦${normalize(m)}`, tags: word.tags || tags,
+    context: word.context || '', maxWords: word.maxWords || null
   };
 }
 

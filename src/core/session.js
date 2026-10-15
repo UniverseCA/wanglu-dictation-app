@@ -11,7 +11,7 @@ export function createSession(entries, options = {}, now = new Date()) {
     id: uid(), kind: options.kind || 'dictation', lane: options.lane || 'dictation',
     source: options.source || '章节练习', chapterId: options.chapterId || null,
     options: {...options}, entries: words, answers: {}, attempts: {}, reasons: {},
-    ratings: {}, firstAttempt: null, feedback: null, cursor: 0, audioIndex: 0,
+    ratings: {}, cardFirst: {}, firstAttempt: null, feedback: null, cursor: 0, audioIndex: 0,
     audioComplete: false, playCounts: {}, unplayed: [], revealed: false,
     startedAt: now.toISOString(), completedAt: null, elapsedMs: 0
   };
@@ -39,7 +39,13 @@ export function grade(session, now = new Date()) {
       reason: session.reasons[entry.id] || '', hint: correct ? '' : spellingHint(typed, entry)};
   });
   session.feedback = results;
-  if (!session.firstAttempt) session.firstAttempt = {at, results: structuredClone(results), ...summarize(results)};
+  if (!session.firstAttempt) {
+    const initial = session.kind === 'cards' ? results.map(result => {
+      const first = session.cardFirst?.[result.entry.id];
+      return first ? {...result, typed: first.typed, rating: first.rating, correct: first.rating === 'known' && result.status !== 'unplayed', status: result.status === 'unplayed' ? 'unplayed' : first.rating === 'known' ? 'correct' : 'incorrect'} : result;
+    }) : results;
+    session.firstAttempt = {at, results: structuredClone(initial), ...summarize(initial)};
+  }
   return results;
 }
 
@@ -54,6 +60,8 @@ export function rateCard(session, rating) {
   if (!['known', 'unsure', 'unknown'].includes(rating)) throw new Error('无效的掌握标记');
   const entry = session.entries[session.cursor];
   if (!entry || !session.revealed) throw new Error('请先揭晓答案，再标记掌握情况');
+  session.cardFirst ||= {};
+  session.cardFirst[entry.id] ||= {rating, typed: session.answers[entry.id] || '', at: new Date().toISOString()};
   session.ratings[entry.id] = rating;
   session.cursor++;
   session.revealed = false;

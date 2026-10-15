@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import vm from 'node:vm';
+const main = await readFile('index.html', 'utf8');
+const standalone = await readFile('王陆语料库听写练习_v5.html', 'utf8');
+assert.equal(main, standalone, 'Hosted and downloadable pages must match');
+assert(!main.includes('/* APP_'), 'Build placeholders must be replaced');
+assert(!/<script[^>]+src=|<link[^>]+href=/i.test(main), 'The page must not require external code or fonts');
+const script = main.match(/<script>([\s\S]*?)<\/script>/)[1];
+new vm.Script(script);
+console.log('Verified standalone parity, inline assets and bundled JavaScript syntax.');
