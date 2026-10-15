@@ -1,0 +1,161 @@
+{
+  "scope": "Local source, isolated VM and DOM/storage mocks; no real browser/audio validation",
+  "syntax": "pass",
+  "dataset": {
+    "sections": 32,
+    "entries": 5873,
+    "uniqueAnswerStrings": 5208,
+    "repeatedAnswerGroups": 608,
+    "largestSection": 916,
+    "annotatedAnswers": [
+      {
+        "w": "RA(research assistant)",
+        "p": "ˌɑːˈreɪ rɪˈsɜːtʃ əˈsɪstənt",
+        "m": "研究助理",
+        "chap": "5.3-8",
+        "index": 139
+      },
+      {
+        "w": "vary according to the type,shape",
+        "p": "ˈveəri əˈkɔːdɪŋ tə ðə taɪp, ʃeɪp",
+        "m": "因为类别、形状而有差异",
+        "chap": "5.3-11",
+        "index": 68
+      },
+      {
+        "w": "archaeologist=archeologist",
+        "p": "<archaeologist=archeologist>",
+        "m": "考古学家",
+        "chap": "11.4",
+        "index": 640
+      },
+      {
+        "w": "fertiliser=fertilizer",
+        "p": "<fertiliser=fertilizer>",
+        "m": "肥料，化肥",
+        "chap": "11.4",
+        "index": 668
+      }
+    ],
+    "phoneticPlaceholders": 88
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "observed": "UI handlers are undefined",
+      "handlers": [
+        "toImport",
+        "doImport",
+        "clearAllData"
+      ]
+    },
+    {
+      "id": "F2",
+      "observed": "Alternative answers rejected",
+      "cases": [
+        {
+          "input": "archaeologist",
+          "answer": "archaeologist=archeologist",
+          "accepted": false
+        },
+        {
+          "input": "archeologist",
+          "answer": "archaeologist=archeologist",
+          "accepted": false
+        },
+        {
+          "input": "fertiliser",
+          "answer": "fertiliser=fertilizer",
+          "accepted": false
+        },
+        {
+          "input": "fertilizer",
+          "answer": "fertiliser=fertilizer",
+          "accepted": false
+        },
+        {
+          "input": "RA",
+          "answer": "RA(research assistant)",
+          "accepted": false
+        },
+        {
+          "input": "truck license",
+          "answer": "truck licence",
+          "accepted": false
+        }
+      ]
+    },
+    {
+      "id": "F3",
+      "observed": "Grading the same answer twice increments error count twice",
+      "count": 2
+    },
+    {
+      "id": "F4",
+      "observed": "Correcting a blank graded row keeps skip state; finish records 0%",
+      "input": "hello",
+      "answer": "hello",
+      "grade": "row-input skip",
+      "pct": 0
+    },
+    {
+      "id": "F5",
+      "observed": "Successful wordbook practice has no saved result or mastery state",
+      "historySaved": false,
+      "wordbook": {
+        "word": "hello",
+        "phon": "",
+        "mean": "你好",
+        "chap": "3.2",
+        "n": 1,
+        "d": "2026/10/16"
+      }
+    },
+    {
+      "id": "F6",
+      "observed": "Opening wordbook leaves continuous playback running"
+    },
+    {
+      "id": "F7",
+      "observed": "Finishing session leaves continuous playback running"
+    },
+    {
+      "id": "F8",
+      "observed": "Grading an unanswered 916-entry section performs 916 full wordbook writes",
+      "writes": 916
+    },
+    {
+      "id": "F9",
+      "observed": "Failed playback still schedules next item",
+      "scheduled": 1
+    },
+    {
+      "id": "F10",
+      "observed": "Typed answer is inserted as raw HTML instead of text",
+      "payload": "<b>audit-marker</b>"
+    },
+    {
+      "id": "F11",
+      "observed": "Syntactically valid null storage breaks history access"
+    },
+    {
+      "id": "F12",
+      "observed": "Wordbook date view lists September before October in descending date order",
+      "dates": [
+        "2026/9/30",
+        "2026/10/1"
+      ]
+    },
+    {
+      "id": "F13",
+      "observed": "First unanswered lookup includes filled, ungraded inputs",
+      "firstFilledIndex": 0,
+      "returnedIndex": 0
+    },
+    {
+      "id": "F14",
+      "observed": "Correcting an incorrect answer after reveal records 100% without an initial score",
+      "pct": 100
+    }
+  ]
+}
