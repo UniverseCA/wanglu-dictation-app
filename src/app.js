@@ -250,8 +250,13 @@ export class StudyApp {
     if (session.kind === 'dictation' && session.entries.some(entry => !session.answers[entry.id]?.trim()) && !this.win.confirm('本轮还有空题，完成后会计为未作答。确认完成？')) return;
     this.queue.pause(); trackActivity(session);
     if (session.kind === 'cards') session.unplayed.push(...session.entries.filter(entry => !session.ratings[entry.id]).map(entry => entry.id));
-    finish(session);
-    this.data = this.repo.commit(session); this.route = 'result'; this.render();
+    const completed = finish(structuredClone(session));
+    try {this.data = this.repo.commit(completed);}
+    catch (error) {
+      if (session.kind === 'cards' && session.cursor >= session.entries.length) {session.cursor = session.entries.length - 1; session.revealed = true; this.render();}
+      throw error;
+    }
+    this.session = completed; this.route = 'result'; this.render();
   }
 
   resultPage() {
@@ -275,7 +280,17 @@ export class StudyApp {
 
   historyPage() {
     const sessions = this.data.sessions.filter(session => (this.historyFilter.lane === 'all' || session.lane === this.historyFilter.lane) && (this.historyFilter.chapter === 'all' || session.chapterId === this.historyFilter.chapter));
-    return `<div class="page-heading"><div><span class="eyebrow">LEARNING JOURNAL</span><h1>进步，有迹可循。</h1><p>先看第一次的表现，再看订正。不同题集和辅助条件请分别比较。</p></div></div><div class="filter-bar"><label>练习方式<select data-history-filter="lane">${options([['all', '全部方式'], ...Object.entries(lanes)], this.historyFilter.lane)}</select></label><label>章节<select data-history-filter="chapter">${options([['all', '全部章节'], ...chapters.map(ch => [ch.id, ch.id])], this.historyFilter.chapter)}</select></label><span>${sessions.length} 次已保存练习</span></div><section class="panel">${sessions.length ? this.sessionRows([...sessions].reverse()) : this.empty('还没有这个范围的记录。', '完成练习后，首次答案和辅助条件会一起保存。')}</section>`;
+    return `<div class="page-heading"><div><span class="eyebrow">LEARNING JOURNAL</span><h1>进步，有迹可循。</h1><p>先看第一次的表现，再看订正。不同题集和辅助条件请分别比较。</p></div></div><div class="filter-bar"><label>练习方式<select data-history-filter="lane">${options([['all', '全部方式'], ...Object.entries(lanes)], this.historyFilter.lane)}</select></label><label>章节<select data-history-filter="chapter">${options([['all', '全部章节'], ...chapters.map(ch => [ch.id, ch.id])], this.historyFilter.chapter)}</select></label><span>${sessions.length} 次已保存练习</span></div>${this.historyTrend(sessions)}<section class="panel">${sessions.length ? this.sessionRows([...sessions].reverse()) : this.empty('还没有这个范围的记录。', '完成练习后，首次答案和辅助条件会一起保存。')}</section>`;
+  }
+
+  historyTrend(sessions) {
+    const valid = sessions.filter(session => !session.legacy && session.firstAttempt.score !== null);
+    if (!valid.length) return '';
+    const signature = session => JSON.stringify([session.lane, session.entries.map(entry => entry.id).sort(), !!session.options.shuffle, session.options.audio?.rate, session.options.audio?.repeat, session.options.audio?.gap]);
+    const latest = valid.at(-1), key = signature(latest);
+    const comparable = valid.filter(session => signature(session) === key).slice(-12);
+    const points = comparable.map((s, i) => `${comparable.length === 1 ? 300 : 40 + i / (comparable.length - 1) * 520},${140 - s.firstAttempt.score * 1.1}`);
+    return `<section class="panel trend-panel"><div class="section-heading"><h2>同题集首次表现</h2><span>${esc(lanes[latest.lane])} · ${comparable.length} 次</span></div><p class="field-note">仅比较与最近一次题目、顺序模式、语速、重复次数和间隔相同的练习；旧版辅助条件未知的记录不参与。</p><svg viewBox="0 0 600 170" class="trend-chart" role="img" aria-label="最近同条件首次成绩：${comparable.map(s => `${s.firstAttempt.score}%`).join('，')}"><path d="M40 30H560 M40 85H560 M40 140H560" stroke="var(--line)" fill="none"/><polyline points="${points.join(' ')}" fill="none" stroke="var(--green)" stroke-width="2"/>${points.map((point, i) => {const [x, y] = point.split(','); return `<circle cx="${x}" cy="${y}" r="4" fill="var(--green)"/><text x="${x}" y="${Number(y) - 10}" fill="var(--muted)" text-anchor="middle" font-size="10">${comparable[i].firstAttempt.score}%</text><text x="${x}" y="160" fill="var(--muted)" text-anchor="middle" font-size="9">${esc(formatDate(comparable[i].completedAt))}</text>`;}).join('')}</svg></section>`;
   }
 
   settingsPage() {
@@ -425,6 +440,7 @@ export class StudyApp {
 
   keydown(event) {
     if (event.key === 'Escape') {this.closeModal(); this.queue.pause();}
+    if (event.target.id === 'word-search' && event.key === 'Enter') {event.preventDefault(); this.wordbook.change(event); this.doc.getElementById('word-search')?.focus();}
     if (this.route === 'dictation' && this.session) {
       if (event.target.matches?.('.dictation-input')) {
         this.session.cursor = Number(event.target.dataset.index);

@@ -42,7 +42,7 @@ export function grade(session, now = new Date()) {
   if (!session.firstAttempt) {
     const initial = session.kind === 'cards' ? results.map(result => {
       const first = session.cardFirst?.[result.entry.id];
-      return first ? {...result, typed: first.typed, rating: first.rating, correct: first.rating === 'known' && result.status !== 'unplayed', status: result.status === 'unplayed' ? 'unplayed' : first.rating === 'known' ? 'correct' : 'incorrect'} : result;
+      return first ? {...result, typed: first.typed, rating: first.rating, correct: first.rating === 'known' && !first.unplayed, status: first.unplayed ? 'unplayed' : first.rating === 'known' ? 'correct' : 'incorrect'} : result;
     }) : results;
     session.firstAttempt = {at, results: structuredClone(initial), ...summarize(initial)};
   }
@@ -61,7 +61,10 @@ export function rateCard(session, rating) {
   const entry = session.entries[session.cursor];
   if (!entry || !session.revealed) throw new Error('请先揭晓答案，再标记掌握情况');
   session.cardFirst ||= {};
-  session.cardFirst[entry.id] ||= {rating, typed: session.answers[entry.id] || '', at: new Date().toISOString()};
+  const attempt = {rating, typed: session.answers[entry.id] || '', at: new Date().toISOString(), correct: rating === 'known'};
+  session.cardFirst[entry.id] ||= {...attempt, unplayed: session.unplayed.includes(entry.id)};
+  const attempts = session.attempts[entry.id] ||= [];
+  if (!attempts.length || attempts.at(-1).rating !== rating || attempts.at(-1).typed !== attempt.typed) attempts.push(attempt);
   session.ratings[entry.id] = rating;
   session.cursor++;
   session.revealed = false;

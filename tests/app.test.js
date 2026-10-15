@@ -114,6 +114,22 @@ test('study scope and limit determine score denominator; custom spelling remains
   } finally {t.close();}
 });
 
+test('failed completion can be retried without losing the session or double counting', async () => {
+  const t = setup();
+  try {
+    t.app.session = createSession([entry()], {audio: {}}); t.app.route = 'dictation'; t.app.render();
+    enter(t.win, t.doc.getElementById('input-0'), 'hello');
+    const original = t.app.repo.storage;
+    t.app.repo.storage = {getItem: key => original.getItem(key), setItem: () => {throw new Error('quota');}};
+    await assert.rejects(t.app.complete(), /保存失败/);
+    assert.equal(t.app.session.completedAt, null);
+    t.app.repo.storage = original;
+    await t.app.complete();
+    assert.equal(t.app.route, 'result');
+    assert.equal(t.app.data.sessions.length, 1);
+  } finally {t.close();}
+});
+
 test('returning to an earlier card cannot overwrite its first recall rating', async () => {
   const t = setup();
   try {

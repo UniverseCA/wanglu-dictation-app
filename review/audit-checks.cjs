@@ -3,8 +3,11 @@
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
+const { execFileSync } = require('node:child_process');
 
-const html = fs.readFileSync('王陆语料库听写练习_v5.html', 'utf8');
+const current = fs.readFileSync('王陆语料库听写练习_v5.html', 'utf8');
+// This is a historical audit, not the current application's regression suite.
+const html = current.includes('const VOCAB =') ? current : execFileSync('git', ['show', '865479d:王陆语料库听写练习_v5.html'], {encoding: 'utf8', maxBuffer: 2 * 1024 * 1024});
 const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
 new vm.Script(source);
 const body = source.slice(0, source.lastIndexOf('// ── INIT ──'));

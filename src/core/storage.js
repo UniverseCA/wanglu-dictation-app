@@ -29,27 +29,46 @@ function validEntry(entry) {
     && Array.isArray(entry.answers) && entry.answers.length > 0 && entry.answers.every(answer => typeof answer === 'string');
 }
 
+function validResult(result) {
+  return isObject(result) && validEntry(result.entry) && typeof result.typed === 'string'
+    && typeof result.correct === 'boolean' && ['unplayed', 'correct', 'incorrect', 'blank'].includes(result.status);
+}
+
+function validPractice(session, draft = false) {
+  return isObject(session) && typeof session.id === 'string' && ['cards', 'dictation'].includes(session.kind)
+    && ['visual', 'audio', 'dictation'].includes(session.lane) && Array.isArray(session.entries) && session.entries.every(validEntry)
+    && isObject(session.options) && isObject(session.answers) && isObject(session.attempts) && isObject(session.playCounts)
+    && (!draft || (session.entries.length > 0 && isObject(session.ratings) && isObject(session.reasons) && Array.isArray(session.unplayed)
+      && Number.isInteger(session.cursor) && session.cursor >= 0 && session.cursor < session.entries.length
+      && Number.isInteger(session.audioIndex) && session.audioIndex >= 0 && session.audioIndex < session.entries.length));
+}
+
 export function validateState(state) {
   rejectUnsafe(state);
   if (!isObject(state) || state.version !== 4 || !Number.isInteger(state.revision)
     || !Array.isArray(state.sessions) || !isObject(state.progress) || !Array.isArray(state.customLists)
     || !Array.isArray(state.clips) || !Array.isArray(state.clipNotes) || !isObject(state.plan) || !isObject(state.audio)
     || !['light', 'dark', 'system'].includes(state.theme)) throw new Error('不是有效的 v4 学习数据');
-  if (state.sessions.some(session => !isObject(session) || typeof session.id !== 'string'
-    || !Number.isFinite(Date.parse(session.completedAt)) || !Array.isArray(session.entries)
-    || !session.entries.every(validEntry) || !isObject(session.firstAttempt)
-    || !Array.isArray(session.firstAttempt.results))) throw new Error('练习历史格式不完整');
-  if (state.draft && (!isObject(state.draft) || !Array.isArray(state.draft.entries)
-    || !state.draft.entries.every(validEntry) || !isObject(state.draft.answers)
-    || !Number.isInteger(state.draft.cursor) || state.draft.cursor < 0 || state.draft.cursor >= state.draft.entries.length)) throw new Error('练习草稿格式不完整');
+  if (state.sessions.some(session => !validPractice(session) || !Number.isFinite(Date.parse(session.completedAt)) || !isObject(session.firstAttempt)
+    || !Array.isArray(session.firstAttempt.results) || !session.firstAttempt.results.every(validResult)
+    || (session.firstAttempt.score !== null && (!Number.isFinite(session.firstAttempt.score) || session.firstAttempt.score < 0 || session.firstAttempt.score > 100))
+    || (session.feedback && (!Array.isArray(session.feedback) || !session.feedback.every(validResult))))) throw new Error('练习历史格式不完整');
+  if (state.draft && !validPractice(state.draft, true)) throw new Error('练习草稿格式不完整');
   if (state.customLists.some(list => !isObject(list) || typeof list.id !== 'string' || !Array.isArray(list.entries) || !list.entries.every(validEntry))) throw new Error('个人词表格式不完整');
   for (const item of Object.values(state.progress)) {
     if (!isObject(item) || !validEntry(item.entry) || !Array.isArray(item.sourceIds) || !Array.isArray(item.attempts) || !isObject(item.lanes)) throw new Error('复习数据格式不完整');
     for (const [lane, data] of Object.entries(item.lanes)) {
-      if (!['visual', 'audio', 'dictation'].includes(lane) || !isObject(data) || !Number.isFinite(Date.parse(data.dueAt))) throw new Error('复习时间或模式无效');
+      if (!['visual', 'audio', 'dictation'].includes(lane) || !isObject(data) || !Number.isFinite(Date.parse(data.dueAt))
+        || ![data.reviews, data.lapses, data.streak].every(n => Number.isInteger(n) && n >= 0)) throw new Error('复习时间或模式无效');
     }
   }
   if (![state.plan.words, state.plan.minutes].every(n => Number.isFinite(n) && n > 0 && n <= 5000)) throw new Error('每日目标超出范围');
+  if (!['tts', 'offline', 'real'].includes(state.audio.voice) || ![0.75, 1, 1.25].includes(state.audio.rate)
+    || ![1, 2, 3].includes(state.audio.repeat) || ![1, 2, 3, 5].includes(state.audio.gap)) throw new Error('发音设置无效');
+  if (state.clips.some(file => !isObject(file) || typeof file.id !== 'string' || typeof file.name !== 'string')) throw new Error('录音信息无效');
+  if (state.clipNotes.some(note => !isObject(note) || typeof note.id !== 'string' || typeof note.fileId !== 'string'
+    || typeof note.typed !== 'string' || typeof note.firstTyped !== 'string' || typeof note.reference !== 'string'
+    || !Number.isFinite(note.from) || !Number.isFinite(note.to) || note.from < 0 || note.to <= note.from)) throw new Error('片段笔记无效');
   return state;
 }
 

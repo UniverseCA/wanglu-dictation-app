@@ -85,6 +85,7 @@ export class ListeningRoom {
     const a = this.app, file = event.target.files[0];
     const id = `${file.name}:${file.size}:${file.lastModified}`;
     const meta = {id, name: file.name, size: file.size, lastModified: file.lastModified};
+    if (this.file?.id !== id) {this.editing = null; this.range = {from: 0, to: 10, loop: true, rate: 1};}
     if (!a.data.clips.some(item => item.id === id)) a.update(state => state.clips.push(meta));
     try {await mediaFile(a.win, id, file);} catch {a.toast('录音在本页可用；浏览器未能缓存文件，下次需重新选择。');}
     this.useFile(meta, file);
