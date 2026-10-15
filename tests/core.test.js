@@ -157,7 +157,9 @@ test('invalid nested backup data cannot replace a valid workspace', () => {
   for (const mutate of [
     state => {state.audio.rate = -1;},
     state => {state.clipNotes.push({id: 'bad', from: '0', to: '10'});},
-    state => {state.draft = {entries: [word()], cursor: 0};}
+    state => {state.draft = {entries: [word()], cursor: 0};},
+    state => {state.draft = createSession([word()]); state.draft.entries[0].id = '__proto__';},
+    state => {state.draft = createSession([word()]); state.draft.entries[0].lexemeId = 'constructor';}
   ]) {
     const invalid = emptyState(); mutate(invalid);
     assert.throws(() => repo.restore(JSON.stringify(invalid)));

@@ -26,6 +26,8 @@ function rejectUnsafe(value) {
 function validEntry(entry) {
   return isObject(entry) && typeof entry.id === 'string' && typeof entry.display === 'string'
     && typeof entry.lexemeId === 'string' && typeof entry.meaning === 'string'
+    && !['__proto__', 'constructor', 'prototype'].includes(entry.id)
+    && !['__proto__', 'constructor', 'prototype'].includes(entry.lexemeId)
     && Array.isArray(entry.answers) && entry.answers.length > 0 && entry.answers.every(answer => typeof answer === 'string');
 }
 
