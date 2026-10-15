@@ -358,7 +358,7 @@ canvas{display:block;}
           <span class="dict-chap" id="d-chap"></span>
           <span class="dict-meta" id="d-meta"></span>
           <button class="audio-btn" id="btn-play" onclick="playActiveWord()" title="播放当前词 (F2)">🔊<span class="ab-txt"> 播放</span></button>
-          <button class="audio-btn" id="btn-block" onclick="toggleBlockPlay()" title="从第一个未答词开始连播，模拟书配套音频">▶<span class="ab-txt"> 连播</span></button>
+          <button class="audio-btn" id="btn-block" onclick="toggleBlockPlay()" title="从第一个未答词开始连播，不自动换行，按 Enter 手动换行">▶<span class="ab-txt"> 连播</span></button>
           <button class="audio-btn" id="btn-auto" onclick="toggleAuto()" title="开启后光标移到空格自动发音">🔁<span class="ab-txt"> 自动</span></button>
           <button class="audio-btn" id="btn-settings" onclick="toggleSettings()" title="发音设置">⚙<span class="ab-txt"> 设置</span></button>
           <div class="dict-strip-sep"></div>
@@ -7664,8 +7664,7 @@ function playBlockFrom(i){
   if(!blockRunning)return;
   const idx=nextUnanswered(i);
   if(idx<0){stopBlock();return;}
-  const inp=document.getElementById('inp-'+idx);
-  if(inp){inp.focus();inp.scrollIntoView({block:'center',behavior:'smooth'});}
+  // 连播只推进音频，输入位置由用户手动控制。
   speakRowWord(idx,()=>{
     if(!blockRunning)return;
     blockTimer=setTimeout(()=>playBlockFrom(idx+1),(audioSettings.gap||2)*1000);
