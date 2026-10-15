@@ -5,3 +5,7 @@ Thumbs.db
 # 编辑器
 .vscode/
 *.swp
+
+node_modules/
+test-results/
+*.log
