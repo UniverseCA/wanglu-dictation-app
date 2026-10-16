@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+message: "Please cite this software and record the commit you used. See NOTICE.md for upstream credits and material rights."
+type: software
+title: "词间 · 王陆听力工作台"
+authors:
+  - name: "UniverseCA"
+    website: "https://github.com/UniverseCA"
+repository-code: "https://github.com/UniverseCA/wanglu-dictation-app"
+url: "https://universeca.github.io/wanglu-dictation-app/"
+abstract: "A browser-based IELTS vocabulary study workspace with visual recall, audio recall, dictation, review scheduling, local recording practice, and day/night themes. Derived from the upstream projects credited in NOTICE.md."
+keywords:
+  - IELTS
+  - vocabulary
+  - dictation
+  - listening
+  - spaced repetition
+references:
+  - type: software
+    title: "wanglu-dictation"
+    authors:
+      - name: "zyxlele"
+    repository-code: "https://github.com/zyxlele/wanglu-dictation"
+  - type: software
+    title: "wanglu-dictation-app"
+    authors:
+      - name: "PipiTang233"
+    repository-code: "https://github.com/PipiTang233/wanglu-dictation-app"
