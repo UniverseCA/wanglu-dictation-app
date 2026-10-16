@@ -83,7 +83,9 @@ review/               旧版审查记录与冻结基线复现脚本
 
 ## 静态部署
 
-本仓库为 [UniverseCA/wanglu-dictation-app](https://github.com/UniverseCA/wanglu-dictation-app)。生成的根目录 `index.html` 可直接用于 GitHub Pages 或其他静态托管。GitHub Pages 的分支和目录以仓库 Settings → Pages 实际配置为准。开发服务器不会自动推送或发布。
+本仓库为 [UniverseCA/wanglu-dictation-app](https://github.com/UniverseCA/wanglu-dictation-app)。正式站点地址为 https://universeca.github.io/wanglu-dictation-app/ 。主分支更新后，GitHub Actions 会运行测试和构建，通过后仅发布两个独立 HTML 页面。仓库 Settings → Pages 的 Source 应选择 GitHub Actions。开发服务器不会自动推送或发布。
+
+本地预览与正式站点使用不同的浏览器存储。迁移时先在旧网址导出完整 JSON 备份，再在正式网址导入；录音原文件需另存。网站发布不提供账号或跨设备同步。
 
 ## 出处
 
