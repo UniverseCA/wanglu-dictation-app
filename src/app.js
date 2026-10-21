@@ -134,7 +134,7 @@ export class StudyApp {
     let entries = s.pool === 'wrong' ? wrongEntries(this.data.progress) : s.pool === 'due' ? dueEntries(this.data.progress, s.lane)
       : s.pool.startsWith('custom:') ? this.data.customLists.find(list => list.id === s.pool.slice(7))?.entries || []
         : specialtyEntries(s.pool) || vocabulary;
-    if (s.chapter !== 'all' && !s.pool.startsWith('custom:') && !s.pool.startsWith('special:')) entries = entries.filter(entry => entry.chapterId === s.chapter || this.data.progress[entry.lexemeId]?.sourceIds.some(id => byId.get(id)?.chapterId === s.chapter));
+    if (s.chapter !== 'all' && !s.pool.startsWith('custom:') && !s.pool.startsWith('special:')) entries = entries.filter(entry => entry.chapterId === s.chapter || (['wrong', 'due'].includes(s.pool) && this.data.progress[entry.lexemeId]?.sourceIds.some(id => byId.get(id)?.chapterId === s.chapter)));
     return entries;
   }
 

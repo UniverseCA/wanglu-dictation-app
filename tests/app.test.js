@@ -142,6 +142,23 @@ test('study scope and limit determine score denominator; custom spelling remains
   } finally {t.close();}
 });
 
+test('sequential chapter 3.3-3 excludes other chapters even after shared words were studied', async () => {
+  const t = setup();
+  try {
+    const expected = vocabulary.filter(word => word.chapterId === '3.3-3');
+    for (const word of expected) {
+      const sources = vocabulary.filter(source => source.lexemeId === word.lexemeId);
+      t.app.data.progress[word.lexemeId] = {entry: word, sourceIds: sources.map(source => source.id), lanes: {}, attempts: [], everWrong: true};
+    }
+    t.app.selection = {lane: 'dictation', pool: 'all', chapter: '3.3-3', from: '1', to: '', count: '0', shuffle: false};
+    assert.deepEqual(t.app.poolEntries().map(word => word.id), expected.map(word => word.id));
+    await t.app.begin();
+    assert.equal(t.app.session.entries.length, 113);
+    assert.deepEqual(t.app.session.entries.map(word => word.id), expected.map(word => word.id));
+    assert.deepEqual(t.app.session.entries.slice(0, 4).map(word => word.display), ['debt', 'decade', 'decision', 'decline']);
+  } finally {t.close();}
+});
+
 test('shuffle applies only to the current round and draft resume preserves its order', async () => {
   const t = setup();
   try {
