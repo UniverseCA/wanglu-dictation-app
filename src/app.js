@@ -150,6 +150,7 @@ export class StudyApp {
       chapterId: this.selection.chapter === 'all' ? null : this.selection.chapter,
       source: this.selection.pool === 'all' ? '章节练习' : this.selection.pool === 'wrong' ? '错词复练' : this.selection.pool === 'due' ? '到期复习' : this.selection.pool.startsWith('special:') ? '专项练习' : '个人词表',
       shuffle: this.selection.shuffle, audio: {...this.data.audio}});
+    this.selection.shuffle = false;
     this.session.lastActivityAt = Date.now(); this.alignmentUndo = [];
     this.route = this.session.kind === 'cards' ? 'cards' : 'dictation';
     this.flushDraft(); this.render(); this.configureQueue();

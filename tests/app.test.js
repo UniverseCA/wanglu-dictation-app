@@ -142,6 +142,32 @@ test('study scope and limit determine score denominator; custom spelling remains
   } finally {t.close();}
 });
 
+test('shuffle applies only to the current round and draft resume preserves its order', async () => {
+  const t = setup();
+  try {
+    await t.app.action('quick-start', {dataset: {lane: 'dictation'}});
+    const checkbox = t.doc.querySelector('[name="shuffle"]');
+    checkbox.checked = true;
+    await t.app.change({target: checkbox});
+    await t.app.submit(t.doc.querySelector('[data-form="start"]'));
+    assert.equal(t.app.session.options.shuffle, true);
+    const order = t.app.session.entries.map(word => word.id);
+
+    t.app.navigate('home');
+    await t.app.action('quick-start', {dataset: {lane: 'dictation'}});
+    assert.equal(t.doc.querySelector('[name="shuffle"]').checked, false);
+    t.app.resume();
+    assert.equal(t.app.session.options.shuffle, true);
+    assert.deepEqual(t.app.session.entries.map(word => word.id), order);
+
+    t.app.navigate('study');
+    const expected = t.app.poolEntries().slice(0, 20).map(word => word.id);
+    await t.app.submit(t.doc.querySelector('[data-form="start"]'));
+    assert.equal(t.app.session.options.shuffle, false);
+    assert.deepEqual(t.app.session.entries.map(word => word.id), expected);
+  } finally {t.close();}
+});
+
 test('failed completion can be retried without losing the session or double counting', async () => {
   const t = setup();
   try {
