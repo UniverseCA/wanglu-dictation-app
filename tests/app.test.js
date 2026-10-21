@@ -116,6 +116,25 @@ test('playback leaves input focus unchanged and navigation preserves draft', asy
   } finally {t.close();}
 });
 
+test('Enter advances dictation focus and scrolls the next input to the viewport center', () => {
+  const t = setup();
+  try {
+    t.app.session = createSession([entry(), {...entry(), id: 'test:2'}], {audio: {}});
+    t.app.route = 'dictation'; t.app.render();
+    const first = t.doc.getElementById('input-0'), next = t.doc.getElementById('input-1');
+    const scrolls = [];
+    next.scrollIntoView = options => scrolls.push(options);
+    first.focus();
+    first.dispatchEvent(new t.win.KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true}));
+    assert.equal(t.doc.activeElement, next);
+    assert.equal(t.app.session.cursor, 1);
+    assert.deepEqual(scrolls, [{block: 'center', behavior: 'auto'}]);
+    next.dispatchEvent(new t.win.KeyboardEvent('keydown', {key: 'Enter', bubbles: true, cancelable: true}));
+    assert.equal(t.doc.activeElement, next);
+    assert.equal(scrolls.length, 1);
+  } finally {t.close();}
+});
+
 test('typed HTML is displayed literally in result and history DOM', async () => {
   const t = setup();
   try {

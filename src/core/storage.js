@@ -10,7 +10,7 @@ export function emptyState() {
   return {
     version: 4, revision: 0, sessions: [], progress: {}, draft: null, customLists: [],
     clips: [], clipNotes: [], plan: {words: 50, minutes: 30},
-    audio: {rate: 1, repeat: 1, gap: 2, voice: 'tts', auto: false}, theme: 'system',
+    audio: {rate: 1, repeat: 1, gap: 4, voice: 'tts', auto: false}, theme: 'system',
     migration: null, lastBackupAt: null
   };
 }
@@ -66,7 +66,7 @@ export function validateState(state) {
   }
   if (![state.plan.words, state.plan.minutes].every(n => Number.isFinite(n) && n > 0 && n <= 5000)) throw new Error('每日目标超出范围');
   if (!['tts', 'offline', 'real'].includes(state.audio.voice) || ![0.75, 1, 1.25].includes(state.audio.rate)
-    || ![1, 2, 3].includes(state.audio.repeat) || ![1, 2, 3, 5].includes(state.audio.gap)) throw new Error('发音设置无效');
+    || ![1, 2, 3].includes(state.audio.repeat) || ![1, 2, 3, 4, 5].includes(state.audio.gap)) throw new Error('发音设置无效');
   if (state.clips.some(file => !isObject(file) || typeof file.id !== 'string' || typeof file.name !== 'string')) throw new Error('录音信息无效');
   if (state.clipNotes.some(note => !isObject(note) || typeof note.id !== 'string' || typeof note.fileId !== 'string'
     || typeof note.typed !== 'string' || typeof note.firstTyped !== 'string' || typeof note.reference !== 'string'
@@ -83,7 +83,7 @@ export function migrateLegacy(hist = {}, wb = {}, audio = {}) {
   legacyObject(hist, '旧版历史'); legacyObject(wb, '旧版错词'); legacyObject(audio, '旧版设置');
   const state = emptyState();
   state.audio = {rate: [0.75, 1, 1.25].includes(audio.rate) ? audio.rate : 1,
-    repeat: [1, 2, 3].includes(audio.rep) ? audio.rep : 1, gap: [1, 2, 3, 5].includes(audio.gap) ? audio.gap : 2,
+    repeat: [1, 2, 3].includes(audio.rep) ? audio.rep : 1, gap: [1, 2, 3, 4, 5].includes(audio.gap) ? audio.gap : 4,
     voice: audio.voice === 'real' ? 'real' : 'tts', auto: !!audio.auto};
   for (const [chapterId, sessions] of Object.entries(hist)) {
     if (!Array.isArray(sessions)) throw new Error('旧版章节历史应为列表');

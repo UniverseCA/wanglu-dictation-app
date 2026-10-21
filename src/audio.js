@@ -169,7 +169,7 @@ export class PlaybackQueue {
       if (this.position < this.entries.length) {
         this.status = 'gap'; this.emit();
         await new Promise(resolve => {
-          const timer = setTimeout(resolve, (this.settings.gap ?? 2) * 1000);
+          const timer = setTimeout(resolve, (this.settings.gap ?? 4) * 1000);
           this.cancelGap = () => {clearTimeout(timer); resolve();};
         });
         this.cancelGap = null;
