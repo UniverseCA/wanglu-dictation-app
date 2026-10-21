@@ -336,6 +336,7 @@ export class StudyApp {
 
   input(event) {
     const target = event.target;
+    this.wordbook.input(event);
     if (target.matches('.dictation-input, #recall-spelling')) {
       const index = target.id === 'recall-spelling' ? this.session.cursor : Number(target.dataset.index);
       const entry = this.session.entries[index];

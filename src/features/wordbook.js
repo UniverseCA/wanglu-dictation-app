@@ -6,7 +6,7 @@ import { escapeHTML as esc, button as btn, formatDate, icon } from '../ui.js';
 const selectOptions = (values, selected) => values.map(([value, label]) => `<option value="${esc(value)}" ${value === selected ? 'selected' : ''}>${esc(label)}</option>`).join('');
 
 export class Wordbook {
-  constructor(app) {this.app = app; this.limit = 100;}
+  constructor(app) {this.app = app; this.limit = 100; this.audio = {};}
 
   sources(item) {return [...new Set([item.entry.chapterId, ...item.sourceIds.map(id => byId.get(id)?.chapterId).filter(Boolean)])];}
 
@@ -23,9 +23,11 @@ export class Wordbook {
 
   render() {
     const a = this.app, f = a.wordFilter, items = this.filtered();
+    const audio = {...a.data.audio, ...this.audio};
     const chapters = [...new Set(Object.values(a.data.progress).filter(i => i.everWrong).flatMap(i => this.sources(i)))];
     return `<div class="page-heading"><div><span class="eyebrow">WORDS TO COME BACK TO</span><h1>错过的，再认识一次。</h1><p>听写错误和背词时的“不会”都会留在这里，掌握情况按练习方式分别记录。</p></div></div>
       <div class="filter-bar"><label>搜索<input id="word-search" type="search" placeholder="英文或中文" value="${esc(f.query)}"></label><label>章节<select data-word-filter="chapter">${selectOptions([['all', '全部来源'], ...chapters.map(ch => [ch, ch])], f.chapter)}</select></label><label>练习方式<select data-word-filter="lane">${selectOptions(Object.entries(lanes), f.lane)}</select></label><label>状态<select data-word-filter="status">${selectOptions([['all', '全部错词'], ['learning', '仍需巩固'], ['due', '当前到期'], ['mastered', '已掌握']], f.status)}</select></label><label>错因<select data-word-filter="reason">${selectOptions([['', '全部错因'], ...['没听出', '拼写错误', '单复数或词尾', '跟丢或错行', '词义不熟', '其他'].map(value => [value, value])], f.reason)}</select></label></div>
+      <section class="panel wordbook-playback"><div class="section-heading"><h2>错词播放设置</h2></div><div class="form-grid"><label>每个单词重复<select data-word-audio="repeat">${selectOptions([[1, '1 次'], [2, '2 次'], [3, '3 次']], audio.repeat)}</select></label><label for="word-gap"><span>词间停顿：<output id="word-gap-value" for="word-gap">${audio.gap} 秒</output></span><input id="word-gap" data-word-audio="gap" type="range" min="1" max="10" step="1" value="${audio.gap}" aria-valuetext="${audio.gap} 秒"></label></div><p class="field-note">每个词读完所选次数后，再停顿指定秒数。设置用于下方「练习筛选出的词」。</p></section>
       <div class="actions wordbook-actions">${btn('word-practice', '练习筛选出的词', 'button primary', items.length ? '' : 'disabled')}${btn('word-due', '本模式到期复习', 'button secondary')}<span class="muted">${items.length} 个词项</span></div>
       <section class="panel">${items.length ? items.slice(0, this.limit).map(item => {
         const lane = item.lanes[f.lane];
@@ -33,8 +35,21 @@ export class Wordbook {
       }).join('') : a.empty('这里的空白，也是进步。', '可调整筛选范围，或先完成一轮背词、听写。')}${items.length > this.limit ? btn('word-more', '加载更多', 'button quiet wide') : ''}</section>`;
   }
 
+  input(event) {
+    const target = event.target, key = target.dataset.wordAudio;
+    if (!['repeat', 'gap'].includes(key)) return;
+    const value = Number(target.value);
+    if (!Number.isInteger(value) || value < 1 || value > (key === 'repeat' ? 3 : 10)) return;
+    this.audio[key] = value;
+    if (key === 'gap') {
+      this.app.doc.getElementById('word-gap-value').textContent = `${value} 秒`;
+      target.setAttribute('aria-valuetext', `${value} 秒`);
+    }
+  }
+
   change(event) {
     const target = event.target;
+    this.input(event);
     if (target.dataset.wordFilter) {this.app.wordFilter[target.dataset.wordFilter] = target.value; this.limit = 100; this.app.render();}
     if (target.id === 'word-search') {this.app.wordFilter.query = target.value; this.limit = 100; this.app.render();}
   }
@@ -47,7 +62,7 @@ export class Wordbook {
     if (action === 'word-practice') {
       const entries = this.filtered().map(item => item.entry);
       if (a.data.draft && !a.win.confirm('开始错词练习会替换原草稿，确认开始？')) return true;
-      a.session = createSession(entries, {kind: a.wordFilter.lane === 'dictation' ? 'dictation' : 'cards', lane: a.wordFilter.lane, source: '错词复练', shuffle: true, audio: {...a.data.audio}});
+      a.session = createSession(entries, {kind: a.wordFilter.lane === 'dictation' ? 'dictation' : 'cards', lane: a.wordFilter.lane, source: '错词复练', shuffle: false, audio: {...a.data.audio, ...this.audio}});
       a.route = a.session.kind === 'cards' ? 'cards' : 'dictation'; a.flushDraft(); a.render(); a.configureQueue();
       if (a.session.lane === 'audio') await a.recall.play();
     }

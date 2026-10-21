@@ -45,6 +45,54 @@ test('wordbook chapter filters include every original source of a repeated word'
   } finally {t.close();}
 });
 
+test('practicing filtered wrong words preserves the displayed order without shuffling', async () => {
+  const t = setup();
+  try {
+    const words = vocabulary.filter(word => word.chapterId === '3.3-3').slice(0, 4);
+    words.forEach((word, index) => {
+      t.app.data.progress[word.lexemeId] = {entry: word, sourceIds: [word.id],
+        lanes: {dictation: {lapses: index + 1}}, attempts: [], everWrong: true};
+    });
+    t.app.wordFilter.chapter = '3.3-3';
+    t.app.navigate('wrong');
+    const expected = t.app.wordbook.filtered().map(item => item.entry.id);
+    await t.app.wordbook.action('word-practice');
+    assert.equal(t.app.session.options.shuffle, false);
+    assert.deepEqual(t.app.session.entries.map(word => word.id), expected);
+    assert.deepEqual(t.app.data.draft.entries.map(word => word.id), expected);
+  } finally {t.close();}
+});
+
+test('wrong-word playback controls update live and carry into playback and resumed drafts', async () => {
+  const t = setup();
+  try {
+    const word = vocabulary.find(word => word.chapterId === '3.3-3');
+    t.app.data.progress[word.lexemeId] = {entry: word, sourceIds: [word.id], lanes: {}, attempts: [], everWrong: true};
+    const original = {...t.app.data.audio};
+    t.app.navigate('wrong');
+    const repeat = t.doc.querySelector('[data-word-audio="repeat"]');
+    repeat.value = '3';
+    repeat.dispatchEvent(new t.win.Event('change', {bubbles: true}));
+    const slider = t.doc.getElementById('word-gap');
+    slider.focus(); enter(t.win, slider, '7');
+    assert.equal(t.doc.activeElement, slider);
+    assert.equal(t.doc.getElementById('word-gap-value').textContent, '7 秒');
+    assert.equal(slider.getAttribute('aria-valuetext'), '7 秒');
+    t.app.render();
+    assert.equal(t.doc.getElementById('word-gap').value, '7');
+    assert.equal(t.doc.querySelector('[data-word-audio="repeat"] option[selected]').value, '3');
+    await t.app.action('word-practice');
+    assert.equal(t.app.session.options.audio.repeat, 3);
+    assert.equal(t.app.queue.settings.gap, 7);
+    assert.equal(t.app.queue.settings.repeat, 3);
+    assert.equal(new Repository(t.win.localStorage).load().draft.options.audio.gap, 7);
+    assert.deepEqual(t.app.data.audio, original);
+    t.app.navigate('home'); t.app.resume();
+    assert.equal(t.app.queue.settings.gap, 7);
+    assert.equal(t.app.queue.settings.repeat, 3);
+  } finally {t.close();}
+});
+
 test('view recall shows English and hides meaning until revealed', async () => {
   const t = setup();
   try {
